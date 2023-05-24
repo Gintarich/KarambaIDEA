@@ -746,85 +746,16 @@ namespace KarambaIDEA.IDEA
                     int numPoints = 1;
                     for (int ip = 0; ip <= numPoints; ip++)
                     {
-                        ResultOnSection resSec = new ResultOnSection();
-                        resSec.AbsoluteRelative = AbsoluteRelative.Relative;
-                        resSec.Position = (double)ip / (double)numPoints;
-                        //iterate over loadcases
-                        int count = openModel.LoadCase.Count;
-                        for (int i = 1; i <= count; i++)
+                        if (ip == 0)
                         {
-                            ResultOfInternalForces resLoadCase = new ResultOfInternalForces();
-                            int loadCaseNumber = i;
-                            resLoadCase.Loading = new ResultOfLoading() { Id = loadCaseNumber, LoadingType = LoadingType.LoadCase };
-                            resLoadCase.Loading.Items.Add(new ResultOfLoadingItem() { Coefficient = 1.0 });
-
-
-                            //Check if Startpoint is equal to centerpoint
-                            int GrassId = elem.Id - 1;//Element1D.Id - 1 == ElementRAZ.id
-                            int GrassLCId = i - 1;//Loadcase grasshopper starts at 0, Loadcase IDEA starts at 1.
-
-                            //List<BearingMember> BM = joint.attachedMembers.OfType<BearingMember>().ToList();
-
-                            //Find the element to check: isStartpoint true or false
-                            //AttachedMember attached = joint.attachedMembers.Find(a => a.element.id == GrassId);
-
-                            //*** Start Loads
-                            double conv = -1;
-                            double sign = 1;
-                            //Pick Startloads
-                            //API to IDEA UI, My, Vy and Vz are plotted negatively
-                            double N0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.N;
-                            double My0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.My;
-                            double Vz0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Vz;
-                            double Vy0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Vy;
-                            double Mz0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Mz;
-                            double Mt0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Mt;
-
-                            //From Karamba3D to Framework
-                            double N = N0 * sign;
-                            double My = My0 * sign;
-                            double Vz = Vz0 * sign;
-                            double Vy = Vy0 * sign;
-                            double Mz = Mz0 * sign;
-                            double Mt = Mt0 * sign;
-
-                            resLoadCase.N = N;
-                            resLoadCase.My = My;
-                            resLoadCase.Qz = Vz;
-                            resLoadCase.Qy = Vy;
-                            resLoadCase.Mz = Mz;
-                            resLoadCase.Mx = Mt;
-
-                            resSec.Results.Add(resLoadCase);
-
-                            //if (attached.isStartPoint == true) //
-                            //{
-
-                            //    if (attached is BearingMember && BM.Count == 2)
-                            //    {
-                            //Test set sign to -1 iso 1
-                            //SetStartLoads(1, joint, GrassLCId, GrassId, resLoadCase, resSec);
-                            //    }
-                            //    else
-                            //    {
-                            //Test set sign to -1 iso 1
-                            //        SetStartLoads(1, joint, GrassLCId, GrassId, resLoadCase, resSec);
-                            //    }
-                            //}
-                            //else//isEndPoint
-                            //{
-
-                            //    if (attached is BearingMember && BM.Count == 2)
-                            //    {
-                            //        SetEndLoads(1, joint, GrassLCId, GrassId, resLoadCase, resSec);
-                            //    }
-                            //    else
-                            //    {
-                            //        SetEndLoads(1, joint, GrassLCId, GrassId, resLoadCase, resSec);
-                            //    }
-                            //}
+                            var resSec = AddLoadsToStartPoint(ip, numPoints, elem, project);
+                            resMember.Results.Add(resSec);
                         }
-                        resMember.Results.Add(resSec);
+                        else
+                        {
+                            var resSec = AddLoadsToEndPoint(ip, numPoints, elem, project);
+                            resMember.Results.Add(resSec);
+                        }
                     }
                     resultIF.Members.Add(resMember);
                 }
@@ -833,8 +764,121 @@ namespace KarambaIDEA.IDEA
         }
 
 
+        private ResultOnSection AddLoadsToStartPoint(int ip, int numPoints, Element1D elem, Project project)
+        {
+            ResultOnSection resSec = new ResultOnSection();
+            resSec.AbsoluteRelative = AbsoluteRelative.Relative;
+            resSec.Position = (double)ip / (double)numPoints;
+            //iterate over loadcases
+            int count = openModel.LoadCase.Count;
+            for (int i = 1; i <= count; i++)
+            {
+                ResultOfInternalForces resLoadCase = new ResultOfInternalForces();
+                int loadCaseNumber = i;
+                resLoadCase.Loading = new ResultOfLoading() { Id = loadCaseNumber, LoadingType = LoadingType.LoadCase };
+                resLoadCase.Loading.Items.Add(new ResultOfLoadingItem() { Coefficient = 1.0 });
 
 
+                //Check if Startpoint is equal to centerpoint
+                int GrassId = elem.Id - 1;//Element1D.Id - 1 == ElementRAZ.id
+                int GrassLCId = i - 1;//Loadcase grasshopper starts at 0, Loadcase IDEA starts at 1.
+
+                //List<BearingMember> BM = joint.attachedMembers.OfType<BearingMember>().ToList();
+
+                //Find the element to check: isStartpoint true or false
+                //AttachedMember attached = joint.attachedMembers.Find(a => a.element.id == GrassId);
+
+                //*** Start Loads
+                double conv = -1;
+                double sign = 1;
+                //Pick Startloads
+                //API to IDEA UI, My, Vy and Vz are plotted negatively
+                double N0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.N;
+                double My0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.My;
+                double Vz0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Vz;
+                double Vy0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Vy;
+                double Mz0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Mz;
+                double Mt0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].startLoad.Mt;
+
+                //From Karamba3D to Framework
+                double N = N0 * sign;
+                double My = My0 * sign;
+                double Vz = Vz0 * sign;
+                double Vy = Vy0 * sign;
+                double Mz = Mz0 * sign;
+                double Mt = Mt0 * sign;
+
+                resLoadCase.N = N;
+                resLoadCase.My = My;
+                resLoadCase.Qz = Vz;
+                resLoadCase.Qy = Vy;
+                resLoadCase.Mz = Mz;
+                resLoadCase.Mx = Mt;
+
+                resSec.Results.Add(resLoadCase);
+
+                
+            }
+            return resSec;
+        }
+
+        private ResultOnSection AddLoadsToEndPoint(int ip, int numPoints, Element1D elem, Project project)
+        {
+            ResultOnSection resSec = new ResultOnSection();
+            resSec.AbsoluteRelative = AbsoluteRelative.Relative;
+            resSec.Position = (double)ip / (double)numPoints;
+            //iterate over loadcases
+            int count = openModel.LoadCase.Count;
+            for (int i = 1; i <= count; i++)
+            {
+                ResultOfInternalForces resLoadCase = new ResultOfInternalForces();
+                int loadCaseNumber = i;
+                resLoadCase.Loading = new ResultOfLoading() { Id = loadCaseNumber, LoadingType = LoadingType.LoadCase };
+                resLoadCase.Loading.Items.Add(new ResultOfLoadingItem() { Coefficient = 1.0 });
+
+
+                //Check if Startpoint is equal to centerpoint
+                int GrassId = elem.Id - 1;//Element1D.Id - 1 == ElementRAZ.id
+                int GrassLCId = i - 1;//Loadcase grasshopper starts at 0, Loadcase IDEA starts at 1.
+
+                //List<BearingMember> BM = joint.attachedMembers.OfType<BearingMember>().ToList();
+
+                //Find the element to check: isStartpoint true or false
+                //AttachedMember attached = joint.attachedMembers.Find(a => a.element.id == GrassId);
+
+                //*** Start Loads
+                double conv = -1;
+                double sign = 1;
+                //Pick Startloads
+                //API to IDEA UI, My, Vy and Vz are plotted negatively
+                double N0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.N;
+                double My0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.My;
+                double Vz0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.Vz;
+                double Vy0 = conv * 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.Vy;
+                double Mz0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.Mz;
+                double Mt0 = 1000 * project.loadcases[GrassLCId].loadsPerLines[GrassId].endLoad.Mt;
+
+                //From Karamba3D to Framework
+                double N = N0 * sign;
+                double My = My0 * sign;
+                double Vz = Vz0 * sign;
+                double Vy = Vy0 * sign;
+                double Mz = Mz0 * sign;
+                double Mt = Mt0 * sign;
+
+                resLoadCase.N = N;
+                resLoadCase.My = My;
+                resLoadCase.Qz = Vz;
+                resLoadCase.Qy = Vy;
+                resLoadCase.Mz = Mz;
+                resLoadCase.Mx = Mt;
+
+                resSec.Results.Add(resLoadCase);
+
+
+            }
+            return resSec;
+        }
 
         private void CreateIDEAOpenModelResults(Joint joint)
         {
